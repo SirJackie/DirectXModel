@@ -1,7 +1,7 @@
 ﻿#include <iostream>
 #include <Windows.h>
-#include <d3d9.h>
-#include "FrameBuffer.h"
+#include "resource.h"
+#include "Main.h"
 using namespace std;
 
 #define WindowLeftMargin  50
@@ -13,10 +13,10 @@ using namespace std;
 
 #define ClearBufferWhenLockingBackBuffer FALSE
 
+BOOL FirstTimeRunning = TRUE;
+
 FrameBuffer fb;
 LRESULT WINAPI MsgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
-
-int color = 0;
 
 
 int WINAPI wWinMain(HINSTANCE hInst, HINSTANCE, LPWSTR, INT)
@@ -106,12 +106,13 @@ int WINAPI wWinMain(HINSTANCE hInst, HINSTANCE, LPWSTR, INT)
 			fb.LockBackBuffer();
 
 			// Main Function!
-			for (int y = 0; y < 100; y++) {
-				for (int x = 0; x < 100; x++) {
-					((D3DCOLOR*)fb.rect.pBits)[x + (fb.rect.Pitch >> 2) * y] = RGB888(color % 255, color % 255, color % 255);
-				}
+			if (FirstTimeRunning) {
+				Setup(&fb, WindowWidth, WindowHeight);
+				FirstTimeRunning = FALSE;
 			}
-			color += 1;
+			else {
+				Update(&fb, WindowWidth, WindowHeight);
+			}
 			
 			// Unlock the Back Buffer
 			fb.UnlockBackBuffer();
@@ -123,6 +124,7 @@ int WINAPI wWinMain(HINSTANCE hInst, HINSTANCE, LPWSTR, INT)
 
 	// When WM_DESTROY, Release All the Variables
 	UnregisterClass(WindowClassName, wc.hInstance);
+	OnDestroy(&fb, WindowWidth, WindowHeight);
 	fb.Destroy();
 
 	return 0;
