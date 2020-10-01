@@ -3,8 +3,7 @@
 #include "resource.h"
 #include <Windows.h>
 
-//#define Pixel(fb) ()
-#define FBRGB(r, g, b) (D3DCOLOR_XRGB(r, g, b))
+#define RGB888(r, g, b) (D3DCOLOR_XRGB(r, g, b))
 
 class FrameBuffer {
 
@@ -19,8 +18,11 @@ public:
 	D3DLOCKED_RECT      rect;
 	HWND                hWnd;
 
-	void Init() {
-		//Direct3D initialize
+	void Init(HWND hWndArgument) {
+		// Save Window Handle
+		this->hWnd = hWndArgument;
+
+		// Direct3D initialize
 		this->pDirect3D = Direct3DCreate9(D3D_SDK_VERSION);
 
 		D3DPRESENT_PARAMETERS d3dpp;
