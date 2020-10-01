@@ -1,35 +1,10 @@
 ﻿#include <iostream>
 #include <Windows.h>
 #include <d3d9.h>
-#include "DirectXFramework.h"
+#include "FrameBuffer.h"
 using namespace std;
 
-IDirect3D9* pDirect3D;
-IDirect3DDevice9* pDevice;
-
-void PutPixel(int x, int y, int r, int g, int b)
-{
-	IDirect3DSurface9* pBackBuffer = NULL;
-	D3DLOCKED_RECT rect;
-
-	pDevice->GetBackBuffer(0, 0, D3DBACKBUFFER_TYPE_MONO, &pBackBuffer);
-	pBackBuffer->LockRect(&rect, NULL, NULL);
-	((D3DCOLOR*)rect.pBits)[x + (rect.Pitch >> 2) * y] = D3DCOLOR_XRGB(r, g, b);
-	pBackBuffer->UnlockRect();
-	pBackBuffer->Release();
-}
-
-void BeginFrame()
-{
-	pDevice->Clear(0, NULL, D3DCLEAR_TARGET, D3DCOLOR_XRGB(0, 0, 0), 0.0f, 0);
-}
-
-void EndFrame()
-{
-	pDevice->Present(NULL, NULL, NULL, NULL);
-}
-
-
+FrameBuffer fb;
 
 LRESULT WINAPI MsgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
@@ -67,19 +42,9 @@ int WINAPI wWinMain(HINSTANCE hInst, HINSTANCE, LPWSTR, INT)
 	ShowWindow(hWnd, SW_SHOWDEFAULT);
 	UpdateWindow(hWnd);
 
-	//Direct3D initialize
-	pDirect3D = Direct3DCreate9(D3D_SDK_VERSION);
-
-	D3DPRESENT_PARAMETERS d3dpp;
-	ZeroMemory(&d3dpp, sizeof(d3dpp));
-	d3dpp.Windowed = TRUE;
-	d3dpp.SwapEffect = D3DSWAPEFFECT_DISCARD;
-	d3dpp.BackBufferFormat = D3DFMT_UNKNOWN;
-	d3dpp.PresentationInterval = D3DPRESENT_INTERVAL_ONE;
-	d3dpp.Flags = D3DPRESENTFLAG_LOCKABLE_BACKBUFFER;
-
-	pDirect3D->CreateDevice(D3DADAPTER_DEFAULT, D3DDEVTYPE_HAL, hWnd,
-		D3DCREATE_HARDWARE_VERTEXPROCESSING | D3DCREATE_PUREDEVICE, &d3dpp, &pDevice);
+	// Initialize FrameBuffer
+	fb.hWnd = hWnd;
+	fb.Init();
 
 	//Process messages
 	MSG msg;
@@ -94,29 +59,21 @@ int WINAPI wWinMain(HINSTANCE hInst, HINSTANCE, LPWSTR, INT)
 		}
 		else
 		{
-			BeginFrame();
+			fb.ClearBackBuffer();
+			fb.LockBackBuffer();
 			for (int y = 0; y < 100; y++) {
 				for (int x = 0; x < 100; x++) {
-					PutPixel(x, y, 255, 255, 255);
+					((D3DCOLOR*)fb.rect.pBits)[x + (fb.rect.Pitch >> 2) * y] = D3DCOLOR_XRGB(255, 255, 255);
 				}
 			}
-			EndFrame();
+			fb.UnlockBackBuffer();
+			fb.Back2FrontBuffer();
 		}
 	}
 
 	//When WM_DESTROY,release all the variable
 	UnregisterClass(L"DirectX Framework Window", wc.hInstance);
-
-	if (pDevice)
-	{
-		pDevice->Release();
-		pDevice = NULL;
-	}
-	if (pDirect3D)
-	{
-		pDirect3D->Release();
-		pDirect3D = NULL;
-	}
+	fb.Destroy();
 
 	return 0;
 }
